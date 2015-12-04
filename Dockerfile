@@ -4,13 +4,14 @@ ENV AGENT_DIR  /opt/buildAgent
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
-		lxc iptables aufs-tools ca-certificates curl wget software-properties-common language-pack-en \
+		lxc iptables aufs-tools ca-certificates curl wget software-properties-common language-pack-en php5-cli git openssh-server \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Fix locale.
 ENV LANG en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
 RUN locale-gen en_US && update-locale LANG=en_US.UTF-8 LC_CTYPE=en_US.UTF-8
+
 
 # grab gosu for easy step-down from root
 RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
@@ -39,6 +40,12 @@ RUN groupadd docker && adduser --disabled-password --gecos "" teamcity \
 	&& sed -i -e "s/%sudo.*$/%sudo ALL=(ALL:ALL) NOPASSWD:ALL/" /etc/sudoers \
 	&& usermod -a -G docker,sudo teamcity
 
+# Setup known hosts
+RUN mkdir /home/teamcity/.ssh/
+ADD config /home/teamcity/.ssh/config
+RUN touch /home/teamcity/.ssh/known_hosts
+RUN chown -hR teamcity:teamcity /home/teamcity/.ssh
+
 # Install ruby and node.js build repositories
 RUN apt-add-repository ppa:chris-lea/node.js \
 	&& apt-add-repository ppa:brightbox/ruby-ng \
@@ -49,7 +56,7 @@ RUN apt-add-repository ppa:chris-lea/node.js \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install httpie (with SNI), awscli, docker-compose
-RUN pip install --upgrade pyopenssl pyasn1 ndg-httpsclient httpie awscli docker-compose==1.5.1
+RUN pip install --upgrade pyopenssl pyasn1 ndg-httpsclient httpie awscli requests==2.6.1 docker-compose==1.5.1 ansible==1.9.4
 RUN ruby-switch --set ruby2.1
 RUN npm install -g bower grunt-cli
 RUN gem install rake bundler compass --no-ri --no-rdoc
