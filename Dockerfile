@@ -34,8 +34,7 @@ RUN echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-s
   	&& update-ca-certificates
 
 # Install docker
-RUN wget -O /usr/local/bin/docker https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 && chmod +x /usr/local/bin/docker
-
+RUN wget -O /usr/local/bin/docker https://get.docker.com/builds/Linux/x86_64/docker-1.10.3 && chmod +x /usr/local/bin/docker
 RUN groupadd docker && adduser --disabled-password --gecos "" teamcity \
 	&& sed -i -e "s/%sudo.*$/%sudo ALL=(ALL:ALL) NOPASSWD:ALL/" /etc/sudoers \
 	&& usermod -a -G docker,sudo teamcity
@@ -48,23 +47,21 @@ RUN chown -hR teamcity:teamcity /home/teamcity/.ssh
 
 # Install ruby and node.js build repositories
 RUN apt-add-repository ppa:chris-lea/node.js \
-	&& apt-add-repository ppa:brightbox/ruby-ng \
 	&& apt-get update \
-    && apt-get upgrade -y \
-	&& apt-get install -y nodejs ruby2.1 ruby2.1-dev ruby ruby-switch unzip \
-	iptables lxc fontconfig libffi-dev build-essential git jq python-dev libssl-dev python-pip \
+	&& apt-get upgrade -y \
+	&& apt-get install -y nodejs unzip iptables lxc fontconfig libffi-dev build-essential git jq python-dev libssl-dev python-pip \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Install httpie (with SNI), awscli, docker-compose
-RUN pip install --upgrade pyopenssl pyasn1 ndg-httpsclient httpie awscli requests==2.6.1 docker-compose==1.5.1 ansible==1.9.4
-RUN ruby-switch --set ruby2.1
-RUN npm install -g bower grunt-cli
-RUN gem install rake bundler compass --no-ri --no-rdoc
+# Install docker-compose and ansible
+RUN pip install --upgrade docker-compose ansible
+RUN npm install -g bower grunt-cli tsd typings typescript
 
 # Install the magic wrapper.
 ADD wrapdocker /usr/local/bin/wrapdocker
-
 ADD docker-entrypoint.sh /docker-entrypoint.sh
+
+# Allow bower to install from teamcity
+RUN chmod -R 777 /usr/lib/node_modules
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
