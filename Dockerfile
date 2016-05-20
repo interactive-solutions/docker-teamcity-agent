@@ -4,7 +4,7 @@ ENV AGENT_DIR  /opt/buildAgent
 
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
-		lxc iptables aufs-tools ca-certificates curl wget software-properties-common language-pack-en php5-cli git openssh-server \
+	lxc iptables aufs-tools ca-certificates curl wget software-properties-common language-pack-en php5-cli git openssh-server \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Fix locale.
@@ -54,7 +54,7 @@ RUN apt-add-repository ppa:chris-lea/node.js \
 
 # Install docker-compose and ansible
 RUN pip install --upgrade docker-compose ansible
-RUN npm install -g bower grunt-cli tsd typings typescript
+RUN npm install -g bower gulp tsd typings typescript
 
 # Install the magic wrapper.
 ADD wrapdocker /usr/local/bin/wrapdocker
