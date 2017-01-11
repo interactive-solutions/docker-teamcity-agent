@@ -50,7 +50,7 @@ RUN add-apt-repository ppa:ondrej/php && \
     apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
     echo "deb https://apt.dockerproject.org/repo ubuntu-xenial main" | tee /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends docker-engine php7.1-mbstring php7.1-zip php7.1-cli glide build-essential ansible nodejs yarn git sshpass python-dev python-pip python-setuptools libssl-dev libffi-dev unzip dmsetup && \
+    apt-get install -y --no-install-recommends docker-engine php7.1-mbstring php7.1-zip php7.1-cli glide build-essential ansible nodejs yarn git sshpass python-dev python-pip python-setuptools libssl-dev libffi-dev unzip dmsetup openssh-server && \
     rm -fr /var/lib/apt/lists/*
 
 # Install golang
