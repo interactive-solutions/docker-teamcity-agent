@@ -57,7 +57,6 @@ RUN add-apt-repository ppa:ondrej/php && \
 RUN wget -qO- https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz | tar xz -C /usr/local
 ENV PATH /usr/local/go/bin:$PATH
 
-
 # Setup teamcity user
 RUN adduser --disabled-password --gecos "" teamcity \
     && usermod -a -G docker teamcity
@@ -66,6 +65,10 @@ RUN mkdir /home/teamcity/.ssh/
 ADD config /home/teamcity/.ssh/config
 RUN touch /home/teamcity/.ssh/known_hosts
 RUN chown -hR teamcity:teamcity /home/teamcity/.ssh
+
+# Setup golang workspace
+ENV GOPATH /home/teamcity/golang
+RUN mkdir -p /home/teamcity/golang/{src,pkg,bin}
 
 RUN pip install --upgrade docker-compose pip
 RUN yarn global add bower gulp tsd typings typescript 
