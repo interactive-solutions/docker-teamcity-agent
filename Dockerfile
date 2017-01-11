@@ -1,60 +1,74 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 
 ENV AGENT_DIR  /opt/buildAgent
 
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends \
-	lxc iptables aufs-tools ca-certificates curl wget software-properties-common language-pack-en php5-cli git openssh-server \
-	&& rm -rf /var/lib/apt/lists/*
+RUN apt-get update  && \
+    apt-get install -y --no-install-recommends \
+    python-dev curl wget software-properties-common language-pack-en && \
+    rm -rf /var/lib/apt/lists/*
 
 # Fix locale.
 ENV LANG en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
 RUN locale-gen en_US && update-locale LANG=en_US.UTF-8 LC_CTYPE=en_US.UTF-8
 
+ENV GOSU_VERSION 1.9
+RUN set -x \
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/* \
+    && dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')" \
+    && wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch" \
+    && wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc" \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 \
+    && gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu \
+    && rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc \
+    && chmod +x /usr/local/bin/gosu \
+    && gosu nobody true 
 
-# grab gosu for easy step-down from root
-RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4
-RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture)" \
-	&& curl -o /usr/local/bin/gosu.asc -SL "https://github.com/tianon/gosu/releases/download/1.6/gosu-$(dpkg --print-architecture).asc" \
-	&& gpg --verify /usr/local/bin/gosu.asc \
-	&& rm /usr/local/bin/gosu.asc \
-	&& chmod +x /usr/local/bin/gosu
 
 # Install java-8-oracle
 RUN echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections \
-	&& echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections \
-	&& add-apt-repository -y ppa:webupd8team/java \
-	&& apt-get update \
-  	&& apt-get install -y --no-install-recommends \
+    && echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections \
+    && add-apt-repository -y ppa:webupd8team/java \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
       oracle-java8-installer ca-certificates-java \
-  	&& rm -rf /var/lib/apt/lists/* /var/cache/oracle-jdk8-installer/*.tar.gz /usr/lib/jvm/java-8-oracle/src.zip /usr/lib/jvm/java-8-oracle/javafx-src.zip \
+    && rm -rf /var/lib/apt/lists/* /var/cache/oracle-jdk8-installer/*.tar.gz /usr/lib/jvm/java-8-oracle/src.zip /usr/lib/jvm/java-8-oracle/javafx-src.zip \
       /usr/lib/jvm/java-8-oracle/jre/lib/security/cacerts \
-  	&& ln -s /etc/ssl/certs/java/cacerts /usr/lib/jvm/java-8-oracle/jre/lib/security/cacerts \
-  	&& update-ca-certificates
+    && ln -s /etc/ssl/certs/java/cacerts /usr/lib/jvm/java-8-oracle/jre/lib/security/cacerts \
+    && update-ca-certificates
 
-# Install docker
-RUN wget -qO- https://get.docker.com/builds/Linux/x86_64/docker-latest.tgz | tar xvz -C /tmp && mv /tmp/docker/* /usr/local/bin/ && chmod +x /usr/local/bin/docker*
-RUN groupadd docker && adduser --disabled-password --gecos "" teamcity \
-	&& sed -i -e "s/%sudo.*$/%sudo ALL=(ALL:ALL) NOPASSWD:ALL/" /etc/sudoers \
-	&& usermod -a -G docker,sudo teamcity
+# Prepare for node.js installation
+RUN curl -sL https://deb.nodesource.com/setup_7.x | bash -
 
-# Setup known hosts
+# Install php and ansible
+RUN add-apt-repository ppa:ondrej/php && \
+    add-apt-repository ppa:ansible/ansible && \
+    add-apt-repository ppa:masterminds/glide && \
+    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+    apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D && \
+    echo "deb https://apt.dockerproject.org/repo ubuntu-xenial main" | tee /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-engine php7.1-mbstring php7.1-zip php7.1-cli glide build-essential ansible nodejs yarn git sshpass python-dev python-pip python-setuptools libssl-dev libffi-dev unzip dmsetup && \
+    rm -fr /var/lib/apt/lists/*
+
+# Install golang
+RUN wget -qO- https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz | tar xz -C /usr/local
+ENV PATH /usr/local/go/bin:$PATH
+
+
+# Setup teamcity user
+RUN adduser --disabled-password --gecos "" teamcity \
+    && usermod -a -G docker teamcity
+
 RUN mkdir /home/teamcity/.ssh/
 ADD config /home/teamcity/.ssh/config
 RUN touch /home/teamcity/.ssh/known_hosts
 RUN chown -hR teamcity:teamcity /home/teamcity/.ssh
 
-# Install ruby and node.js build repositories
-RUN apt-add-repository ppa:chris-lea/node.js \
-	&& apt-get update \
-	&& apt-get upgrade -y \
-	&& apt-get install -y nodejs unzip iptables lxc fontconfig libffi-dev build-essential git jq python-dev libssl-dev python-pip \
-	&& rm -rf /var/lib/apt/lists/*
-
-# Install docker-compose and ansible
-RUN pip install --upgrade docker-compose ansible
-RUN npm install -g bower gulp tsd typings typescript
+RUN pip install --upgrade docker-compose pip
+RUN yarn global add bower gulp tsd typings typescript 
 
 # Install the magic wrapper.
 ADD wrapdocker /usr/local/bin/wrapdocker
