@@ -68,7 +68,7 @@ RUN chown -hR teamcity:teamcity /home/teamcity/.ssh
 
 # Setup golang workspace
 ENV GOPATH /home/teamcity/golang
-RUN mkdir -p /home/teamcity/golang/{src,pkg,bin}
+RUN mkdir -p /home/teamcity/golang/src /home/teamcity/golang/pkg /home/teamcity/golang/bin
 
 RUN pip install --upgrade docker-compose pip
 RUN yarn global add bower gulp tsd typings typescript 
