@@ -84,6 +84,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 
 VOLUME /var/lib/docker
 VOLUME /opt/buildAgent
+VOLUME /home/teamcity/golang
 
 
 EXPOSE 9090
