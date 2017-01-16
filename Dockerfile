@@ -71,7 +71,7 @@ ENV GOPATH /home/teamcity/golang
 RUN mkdir -p /home/teamcity/golang/src /home/teamcity/golang/pkg /home/teamcity/golang/bin
 
 RUN pip install --upgrade docker-compose pip
-RUN yarn global add bower gulp tsd typings typescript 
+RUN npm install -g bower gulp tsd typings typescript 
 
 # Install the magic wrapper.
 ADD wrapdocker /usr/local/bin/wrapdocker
