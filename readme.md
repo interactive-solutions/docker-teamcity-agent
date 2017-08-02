@@ -7,6 +7,7 @@ comes with builtin support for node, php and golang as well as ansible and docke
 
 # Complications
 
+### Docker in docker
 Running docker_in_docker is a real pain the ass, this is the best way we have managed to do it.
 
 Mount the `/var/run/docker.sock` inside the container so use the host docker instance. 
