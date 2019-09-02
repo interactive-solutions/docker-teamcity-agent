@@ -3,8 +3,10 @@ FROM jetbrains/teamcity-agent:2018.2.2
 
 RUN apt-get update  && \
     apt-get install -y --no-install-recommends \
-    python-dev curl wget software-properties-common language-pack-en && \
+    python-dev curl wget software-properties-common language-pack-en \
+    build-essential rubygems ruby-dev && \
     apt-get upgrade -y --no-install-recommends && \ 
+    
     rm -rf /var/lib/apt/lists/*
 
 # Fix locale.
@@ -44,6 +46,9 @@ RUN go get github.com/vektra/mockery/.../
 
 # Install NPM dependencies
 RUN npm install -g bower gulp tsd typings typescript 
+
+# Install compass
+RUN gem install compass
 
 RUN mkdir /root/.ssh/
 ADD config /root/.ssh/config
